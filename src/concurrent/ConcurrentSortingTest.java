@@ -1,5 +1,6 @@
 package concurrent;
 
+import java.util.Scanner;
 import sorting.*;
 import util.MyList;
 
@@ -14,26 +15,32 @@ import util.MyList;
 public class ConcurrentSortingTest {
     
     public static void main(String[] args) {
-        // Tiempo límite de ejecución en segundos (puede pasarse como argumento)
+        Scanner scanner = new Scanner(System.in);
         int timeLimitSeconds = 10;
         
+        // Si se pasa como argumento, usarlo; si no, preguntar al usuario
         if (args.length > 0) {
             try {
                 timeLimitSeconds = Integer.parseInt(args[0]);
                 if (timeLimitSeconds <= 0) {
-                    System.out.println("El tiempo límite debe ser positivo. Usando valor por defecto: 10 segundos.");
-                    timeLimitSeconds = 10;
+                    System.out.println("El tiempo límite debe ser positivo. Solicitando entrada al usuario...\n");
+                    timeLimitSeconds = askUserForTimeLimit(scanner);
                 }
             } catch (NumberFormatException e) {
-                System.out.println("Argumento inválido. Usando valor por defecto: 10 segundos.");
-                timeLimitSeconds = 10;
+                System.out.println("Argumento inválido. Solicitando entrada al usuario...\n");
+                timeLimitSeconds = askUserForTimeLimit(scanner);
             }
+        } else {
+            timeLimitSeconds = askUserForTimeLimit(scanner);
         }
         
-        System.out.println("================================================");
+        scanner.close();
+        
+        System.out.println("\n================================================");
         System.out.println("  ORDENAMIENTO CONCURRENTE - PRUEBA DE RENDIMIENTO");
         System.out.println("================================================");
-        System.out.println("Tiempo límite: " + timeLimitSeconds + " segundos\n");
+        System.out.println("Tiempo limite configurado: " + timeLimitSeconds + " segundos");
+        System.out.println("El programa trabajara durante " + timeLimitSeconds + " segundos\n");
         
         // Generar datos de prueba
         DataGenerator generator = new DataGenerator();
@@ -64,7 +71,7 @@ public class ConcurrentSortingTest {
             threads[i] = new Thread(task, algorithm.getName());
         }
         
-        System.out.println("Iniciando ejecución concurrente de los 6 algoritmos...\n");
+        System.out.println("Generando datos de prueba y iniciando ejecucion concurrente...\n");
         
         // Iniciar todos los hilos casi simultáneamente
         for (Thread thread : threads) {
@@ -82,8 +89,11 @@ public class ConcurrentSortingTest {
         }
         
         long actualDuration = System.currentTimeMillis() - startTime;
-        System.out.println("\nTodas las tareas han finalizado. Tiempo transcurrido: " + 
-            (actualDuration / 1000.0) + " segundos\n");
+        System.out.println("\n================================================");
+        System.out.println("Todas las tareas han finalizado.");
+        System.out.println("Tiempo limite configurado: " + timeLimitSeconds + " segundos");
+        System.out.println("Tiempo total transcurrido: " + (actualDuration / 1000.0) + " segundos");
+        System.out.println("================================================\n");
         
         // Recopilar resultados
         MyList results = new MyList();
@@ -114,10 +124,27 @@ public class ConcurrentSortingTest {
         for (int i = 0; i < results.size(); i++) {
             Result result = results.get(i);
             String status = result.isCompletedAll() ? "**COMPLETO**" : "**INCOMPLETO**";
-            System.out.printf("%-18s | Colecciones: %3d de %2d | Tiempo promedio: %8.2f ms | %s%n",
+            int iteracionesCompletas = result.getCollectionsSorted() / result.getTotalCollections();
+            int coleccionesExtra = result.getCollectionsSorted() % result.getTotalCollections();
+            
+            String coleccionesInfo;
+            if (iteracionesCompletas > 0) {
+                coleccionesInfo = String.format("%d total (%d iteracion%s completa%s", 
+                    result.getCollectionsSorted(),
+                    iteracionesCompletas,
+                    iteracionesCompletas > 1 ? "es" : "",
+                    iteracionesCompletas > 1 ? "s" : "");
+                if (coleccionesExtra > 0) {
+                    coleccionesInfo += " + " + coleccionesExtra + " extra";
+                }
+                coleccionesInfo += ")";
+            } else {
+                coleccionesInfo = result.getCollectionsSorted() + " de " + result.getTotalCollections();
+            }
+            
+            System.out.printf("%-18s | Colecciones: %-25s | Tiempo promedio: %8.2f ms | %s%n",
                 result.getAlgorithmName(),
-                result.getCollectionsSorted(),
-                result.getTotalCollections(),
+                coleccionesInfo,
                 result.getAvgTime(),
                 status);
         }
@@ -148,15 +175,15 @@ public class ConcurrentSortingTest {
                 if (result.getAvgArrayTime() < result.getAvgArrayListTime()) {
                     double diferencia = result.getAvgArrayListTime() - result.getAvgArrayTime();
                     double porcentaje = (diferencia / result.getAvgArrayListTime()) * 100;
-                    System.out.printf("  → Arrays son %.1f%% más rápidos (%.2f ms de diferencia)%n",
+                    System.out.printf("  -> Arrays son %.1f%% mas rapidos (%.2f ms de diferencia)%n",
                         porcentaje, diferencia);
                 } else if (result.getAvgArrayListTime() < result.getAvgArrayTime()) {
                     double diferencia = result.getAvgArrayTime() - result.getAvgArrayListTime();
                     double porcentaje = (diferencia / result.getAvgArrayTime()) * 100;
-                    System.out.printf("  → ArrayLists son %.1f%% más rápidos (%.2f ms de diferencia)%n",
+                    System.out.printf("  -> ArrayLists son %.1f%% mas rapidos (%.2f ms de diferencia)%n",
                         porcentaje, diferencia);
                 } else {
-                    System.out.println("  → Rendimiento similar entre ambas estructuras");
+                    System.out.println("  -> Rendimiento similar entre ambas estructuras");
                 }
                 System.out.println();
             } else {
@@ -192,7 +219,7 @@ public class ConcurrentSortingTest {
         for (int i = 0; i < sortedResults.size(); i++) {
             Result result = sortedResults.get(i);
             String description = generateRankingDescription(result, i, sortedResults);
-            System.out.println(positions[i] + " " + result.getAlgorithmName() + " – " + description);
+            System.out.println(positions[i] + " " + result.getAlgorithmName() + " - " + description);
         }
         
         System.out.println();
@@ -280,6 +307,37 @@ public class ConcurrentSortingTest {
         
         desc.append(".");
         return desc.toString();
+    }
+    
+    /**
+     * Solicita al usuario que ingrese el tiempo límite en segundos.
+     * @param scanner Scanner para leer la entrada del usuario
+     * @return Tiempo límite en segundos (valor por defecto 10 si la entrada es inválida)
+     */
+    private static int askUserForTimeLimit(Scanner scanner) {
+        System.out.println("================================================");
+        System.out.println("  CONFIGURACIÓN DE TIEMPO LÍMITE");
+        System.out.println("================================================");
+        System.out.print("Ingrese el tiempo límite en segundos (presione Enter para usar 10 segundos por defecto): ");
+        
+        String input = scanner.nextLine().trim();
+        
+        if (input.isEmpty()) {
+            System.out.println("Usando valor por defecto: 10 segundos.");
+            return 10;
+        }
+        
+        try {
+            int seconds = Integer.parseInt(input);
+            if (seconds <= 0) {
+                System.out.println("El tiempo debe ser un número positivo. Usando valor por defecto: 10 segundos.");
+                return 10;
+            }
+            return seconds;
+        } catch (NumberFormatException e) {
+            System.out.println("Entrada inválida. Debe ser un número entero. Usando valor por defecto: 10 segundos.");
+            return 10;
+        }
     }
 }
 

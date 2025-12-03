@@ -71,9 +71,6 @@ public class SortingTask implements Runnable {
     
     @Override
     public void run() {
-        String algoPrefix = "[" + algorithm.getName() + "]";
-        System.out.println(algoPrefix + " Iniciando ejecución en hilo " + Thread.currentThread().getName());
-        
         // Crear copias de las colecciones para cada iteración
         MyList workingCollections = new MyList();
         for (int i = 0; i < collections.size(); i++) {
@@ -87,6 +84,7 @@ public class SortingTask implements Runnable {
         // Ejecutar mientras no haya expirado el tiempo
         while (System.currentTimeMillis() < endTime) {
             int collectionsInThisIteration = 0;
+            boolean iterationCompletedInTime = true;
             
             // Iterar sobre todas las colecciones
             for (int i = 0; i < workingCollections.size(); i++) {
@@ -94,13 +92,11 @@ public class SortingTask implements Runnable {
                 
                 // Verificar si aún hay tiempo antes de cada ordenamiento
                 if (System.currentTimeMillis() >= endTime) {
+                    iterationCompletedInTime = false;
                     break;
                 }
                 
                 // Ordenar según el tipo de colección
-                String tipoEstructura = item.isArray ? "ARRAY" : "ArrayList";
-                System.out.println(algoPrefix + " Ordenando " + tipoEstructura + " - " + item.description);
-                
                 long startTime = System.currentTimeMillis();
                 if (item.isArray) {
                     algorithm.sort(item.array);
@@ -114,19 +110,17 @@ public class SortingTask implements Runnable {
                 if (endSort < endTime) {
                     result.addCollection(duration, item.isArray);
                     collectionsInThisIteration++;
-                    System.out.println(algoPrefix + " ✓ " + tipoEstructura + " completado en " + duration + " ms");
                 } else {
                     // El ordenamiento terminó después del tiempo límite
-                    long tiempoExcedido = endSort - endTime;
-                    System.out.println(algoPrefix + " ⚠ " + tipoEstructura + " DESCALIFICADO - Excedió " + 
-                        tiempoExcedido + " ms del límite (tomó " + duration + " ms)");
+                    iterationCompletedInTime = false;
                     break;
                 }
             }
             
-            // Registrar si completó la primera iteración completa
+            // Registrar si completó la primera iteración completa DENTRO del tiempo límite
+            // Debe completar EXACTAMENTE las 12 colecciones requeridas en la primera iteración
             if (!firstIterationComplete) {
-                if (collectionsInThisIteration >= expectedCollections) {
+                if (collectionsInThisIteration == expectedCollections && iterationCompletedInTime) {
                     firstIterationComplete = true;
                 }
             }
@@ -144,12 +138,9 @@ public class SortingTask implements Runnable {
             }
         }
         
-        // Marcar como completo si logró ordenar todas las colecciones en la primera iteración
+        // Marcar como completo SOLO si completó todas las colecciones dentro del tiempo límite
+        // firstIterationComplete solo es true si ordenó todas las 12 colecciones dentro del tiempo límite
         result.setCompletedAll(firstIterationComplete);
-        
-        System.out.println(algoPrefix + " FINALIZADO - Colecciones ordenadas: " + 
-            result.getCollectionsSorted() + " de " + result.getTotalCollections() + 
-            " (Arrays: " + result.getArraysSorted() + ", ArrayLists: " + result.getArrayListsSorted() + ")");
     }
     
     /**

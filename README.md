@@ -55,28 +55,26 @@ src/
 
 Para compilar el proyecto, ejecuta desde la raíz del proyecto:
 
+**En Linux/Mac:**
 ```bash
+mkdir -p bin
 javac -d bin -encoding UTF-8 src/util/*.java src/sorting/*.java src/concurrent/*.java
 ```
 
-O si estás en Windows, puedes usar el script incluido:
-
+**En Windows:**
 ```bash
-compile.bat
-```
-
-O manualmente:
-
-```bash
+if not exist bin mkdir bin
 javac -d bin -encoding UTF-8 src\util\*.java src\sorting\*.java src\concurrent\*.java
 ```
+
+**Nota:** Asegúrate de tener Java JDK 8 o superior instalado y en tu PATH.
 
 ## Ejecución
 
 Para ejecutar el programa, usa la clase principal `ConcurrentSortingTest`:
 
 ```bash
-java -cp bin concurrent.ConcurrentSortingTest [tiempo_en_segundos]
+java -cp bin concurrent.ConcurrentSortingTest [segundos]
 ```
 
 **Ejemplos:**
@@ -93,6 +91,20 @@ java -cp bin concurrent.ConcurrentSortingTest 30
 ```
 
 Si no se especifica un tiempo límite, el programa usará 10 segundos por defecto.
+
+## Limpieza
+
+Para eliminar los archivos compilados y empezar desde cero:
+
+**En Linux/Mac:**
+```bash
+rm -rf bin
+```
+
+**En Windows:**
+```bash
+rmdir /s /q bin
+```
 
 ## Salida del Programa
 
